@@ -1,0 +1,115 @@
+---
+title: "Chipotle Case Study"
+author: "Shu Liu"
+date: '`r Sys.Date()`'
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chiptole Sales 
+
+This is Data in Motion data analysis challenge #1 More details click here [link](https://d-i-motion.com/lessons/challenge-1-chipotle-sales/)
+
+### Scenario 
+
+You are a financial data analyst at Chipotle and your manager has tasked you with analyzing the most recent sales numbers. She has provided the following set of questions she would like answered.
+
+### Get the data
+Link to dataset: Link to [dataset](https://raw.githubusercontent.com/justmarkham/DAT8/master/data/chipotle.tsv)
+
+### Challenge Questions
+>
+  1. Which was the most-ordered item?
+  2. For the most-ordered item, how many items were ordered?
+  3. What was the most ordered item in the choice_description column?
+  4. How many items were ordered in total?
+  5. Turn the item price into a float
+  6. How much was the revenue for the period in the dataset?
+  7. How many orders were made in the period?
+  8. What is the average revenue amount per order?
+  9. How many different items are sold?
+
+## Steps
+### Set up environments
+Notes: install package "tidyverse"
+```{r set up environments}
+install.packages("tidyverse", repos = "http://cran.us.r-project.org") #an argument is added to the function that gives it the web address of the repository. Once the data file is downloaded into the proper directory you will then be able to access your newly installed package.
+library(tidyverse)
+library(ggplot2)
+library(dplyr) #for sorting
+```
+### Load data
+Save the dataset into local file directory. change working directory to where the file is. load the data into dataframe chipotle_sales.
+```{r change working directory}
+setwd("C:/Users/liuch/OneDrive/文档/DataAnalytics/Portfolio/case_study_1")
+chipotle_sales <- read_tsv("chipotle.tsv")
+```
+Now the chiptole_sales has the data. Let's take a glimpse. 
+```{r glimpse the data}
+glimpse(chipotle_sales)
+```
+### Analyze data and answer questions
+1. Which was the most-ordered item? 2. For the most-ordered item, how many items were ordered?
+```{r most-ordered item}
+chipotle_sales_sum <- chipotle_sales %>% 
+  group_by(item_name) %>% 
+  summarise(ordered_num=sum(quantity)) ##created a new dataframe for each item and its ordered sum. 
+chipotle_sales_sum %>% arrange(desc(ordered_num)) ##use arrange() and desc() to sort desc. 
+```
+**Chicken Bowl** was the most-ordered item. **761** were ordered. 
+
+3. What was the most ordered item in the choice_description column?
+```{r filter and sort desc}
+chipotle_sales_choice <- chipotle_sales %>% group_by(choice_description) %>% summarise(ordered_num=sum(quantity)) ##create a new dataframe chipotle_sales_choice for calculating total ordered number for each different choice.
+chipotle_sales_choice %>% filter(choice_description!="NULL") %>% arrange(desc(ordered_num))
+```
+**Diet Coke** is the most ordered item in the choice_description column
+
+4.How many items were ordered in total?
+```{r}
+summarise(chipotle_sales, item_sold=sum(quantity))
+```
+**4972** items were ordered in total.
+
+5.Turn the item price into a float
+First duplicate the item_price column to item_price_db in case make any mistake. 
+```{r duplicate item_price and add a new column item_price_db}
+chipotle_sales <- mutate(chipotle_sales, item_price_db=item_price)
+```
+Then covert the item_price_db to float.
+```{r}
+chipotle_sales$item_price_db <- as.numeric(gsub("[^0-9.]","",chipotle_sales$item_price_db))
+```
+Now we can see item_price_db is float data type.
+
+6.How much was the revenue for the period in the dataset?
+To do this we need to know multiply item_price_db and quantity then get revenue.
+```{r calculate revenue }
+chipotle_sales <- mutate(chipotle_sales, total = quantity * item_price_db) ##add a new column total for total price sold for each order
+revenue <- chipotle_sales %>% summarise(sum(total)) ##calculate the total by summarise(sum(total))
+```
+The revenue for the period is **$39,237**
+
+7.How many orders were made in the period?
+```{r}
+total_orders <-chipotle_sales %>% summarise(n_distinct(order_id)) ##n_distinct() is count distinct value
+```
+**1834** orders were made in the period
+
+8.What is the average revenue amount per order?
+To calculate the average revenue amount per order = revenue/total_orders.
+```{r}
+revenue/total_orders
+```
+So the average revenue per order is $21.39.
+
+9.How many different items are sold?
+```{r how many different items sold}
+summarise(chipotle_sales,items_kind=n_distinct(item_name))
+```
